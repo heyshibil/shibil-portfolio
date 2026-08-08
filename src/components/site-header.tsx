@@ -1,0 +1,5 @@
+import Link from "next/link";
+
+export function SiteHeader() {
+  return <header className="flex items-center justify-between border-b border-white/10 py-5 sm:py-6"><Link href="/" className="group flex items-center gap-3 font-medium text-white" aria-label="Shibil Mohammed, home"><span className="grid size-8 place-items-center rounded-full border border-emerald-200/50 text-xs text-emerald-100 transition group-hover:bg-emerald-200 group-hover:text-zinc-950">SM</span><span className="hidden sm:inline">Shibil Mohammed</span></Link><nav aria-label="Primary navigation" className="flex items-center gap-3 text-sm text-zinc-400 sm:gap-6"><Link className="nav-link" href="/work">Work</Link><Link className="nav-link" href="/about">About</Link><Link className="nav-link" href="/journal">Journal</Link><Link className="rounded-full border border-white/15 px-3 py-1.5 text-zinc-100 transition hover:border-emerald-200/60 hover:text-emerald-100 sm:px-4" href="/#contact">Let&apos;s talk</Link></nav></header>;
+}
