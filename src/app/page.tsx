@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
@@ -8,6 +9,12 @@ import { getPublishedProjects } from "@/lib/public-projects";
 export const revalidate = 3600;
 
 const cardAccents = ["emerald", "amber", "sky"] as const;
+
+const projectCovers: Record<string, string> = {
+  ascend: "/projects/ascend-cover.png",
+  decibel: "/projects/decibel-cover.png",
+  jobo: "/projects/jobo-cover.png",
+};
 
 function ArrowUpRight() {
   return <span aria-hidden="true">↗</span>;
@@ -60,27 +67,46 @@ export default async function Home() {
           <SectionHeading eyebrow="01 / Selected work">
             Products that ask more than a simple interface can answer.
           </SectionHeading>
-          <div className="mt-12 grid gap-4 lg:grid-cols-3">
+          <div className="mt-12 grid gap-6 lg:grid-cols-3">
             {projects.slice(0, 3).map((project, index) => (
               <article
                 key={project.name}
-                className={`project-card group animate-in animate-delay-${index + 5}`}
+                className={`project-folder group animate-in animate-delay-${index + 5}`}
                 data-accent={cardAccents[index % cardAccents.length]}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <p className="project-index font-mono text-xs">{String(index + 1).padStart(2, "0")}</p>
-                  <Link className="project-link" href={`/work/${project.slug}`} aria-label={`Read ${project.name} case study`}>
-                    <ArrowUpRight />
-                  </Link>
+                {/* Folder back panel (creates the tab shape) */}
+                <div className="folder-back" />
+                {/* Accent line on the tab */}
+                <div className="folder-tab-accent" />
+
+                {/* Cover image — the document tucked inside the folder */}
+                <div className="project-cover-wrap">
+                  <Image
+                    src={projectCovers[project.slug] || "/projects/ascend-cover.png"}
+                    alt={`${project.name} preview`}
+                    width={640}
+                    height={400}
+                    className="pointer-events-none select-none"
+                  />
                 </div>
-                <div className="mt-10">
-                  <p className="text-sm text-emerald-100/80">{project.type}</p>
-                  <h3 className="mt-2 text-3xl font-medium tracking-[-0.045em] text-white">{project.name}</h3>
-                  <p className="mt-4 leading-7 text-zinc-400">{project.description}</p>
+
+                {/* Folder front panel — project details */}
+                <div className="folder-front">
+                  <div className="flex items-start justify-between gap-4">
+                    <p className="project-index font-mono text-xs">{String(index + 1).padStart(2, "0")}</p>
+                    <Link className="project-link" href={`/work/${project.slug}`} aria-label={`Read ${project.name} case study`}>
+                      <ArrowUpRight />
+                    </Link>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm text-emerald-100/80">{project.type}</p>
+                    <h3 className="mt-1.5 text-2xl font-medium tracking-[-0.04em] text-white sm:text-3xl">{project.name}</h3>
+                    <p className="mt-3 text-sm leading-6 text-zinc-400">{project.description}</p>
+                  </div>
+                  <ul className="mt-5 flex flex-wrap gap-2" aria-label={`${project.name} highlights`}>
+                    {project.details.map((detail) => <li key={detail} className="tag">{detail}</li>)}
+                  </ul>
                 </div>
-                <ul className="mt-8 flex flex-wrap gap-2" aria-label={`${project.name} highlights`}>
-                  {project.details.map((detail) => <li key={detail} className="tag">{detail}</li>)}
-                </ul>
               </article>
             ))}
           </div>
@@ -104,7 +130,7 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="mt-16 grid gap-8 lg:grid-cols-3 relative">
+          <div className="mt-16 grid gap-0 lg:gap-8 lg:grid-cols-3 relative">
               {[
                 {
                   step: "01",
@@ -194,11 +220,11 @@ export default async function Home() {
 
                   {/* Vertical connector on Mobile (spans in vertical gap between stacked cards) */}
                   {index < arr.length - 1 && (
-                    <div className="flex lg:hidden justify-center items-center py-2 z-20 pointer-events-none">
+                    <div className="flex lg:hidden justify-center items-center z-20 pointer-events-none -my-px">
                       <div className="flex flex-col items-center">
-                        <div className="size-3.5 rounded-full border border-rose-500/50 bg-[#141816] shadow-[0_0_8px_rgba(244,63,94,0.3)] shrink-0 -mt-1.5" />
-                        <div className="h-6 border-l-2 border-dotted border-rose-400/80 my-0.5" />
-                        <div className="size-3.5 rounded-full border border-rose-500/50 bg-[#141816] shadow-[0_0_8px_rgba(244,63,94,0.3)] shrink-0 -mb-1.5" />
+                        <div className="size-3.5 rounded-full border border-rose-500/50 bg-[#141816] shadow-[0_0_8px_rgba(244,63,94,0.3)] shrink-0" />
+                        <div className="h-6 border-l-2 border-dotted border-rose-400/80" />
+                        <div className="size-3.5 rounded-full border border-rose-500/50 bg-[#141816] shadow-[0_0_8px_rgba(244,63,94,0.3)] shrink-0" />
                       </div>
                     </div>
                   )}
@@ -212,8 +238,65 @@ export default async function Home() {
           <SectionHeading eyebrow="03 / Field notes">
             A space for the things I&apos;m learning about life, work, and becoming better.
           </SectionHeading>
-          <div className="mt-12 rounded-2xl border border-white/10 bg-[linear-gradient(120deg,rgba(110,231,183,0.09),rgba(255,255,255,0.02)_42%)] p-7 sm:p-10">
-            {latestPost ? <><p className="eyebrow">Latest note</p><h3 className="mt-4 max-w-2xl text-2xl font-medium tracking-[-0.04em] text-white sm:text-3xl"><Link className="transition hover:text-emerald-100" href={`/journal/${latestPost.slug}`}>{latestPost.title}</Link></h3>{latestPost.excerpt && <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-300">{latestPost.excerpt}</p>}<p className="mt-5 text-sm text-emerald-100/80">{latestPost.tags?.join(" · ")}</p><div className="mt-7 flex flex-wrap gap-4"><Link className="button-primary" href={`/journal/${latestPost.slug}`}>Read note <ArrowUpRight /></Link><Link className="button-secondary" href="/journal">More notes →</Link></div></> : <><p className="max-w-2xl text-xl leading-8 text-zinc-200 sm:text-2xl">The journal is ready for the quieter parts of the journey—not just what I build, but what I notice along the way.</p><Link className="mt-7 inline-flex text-sm text-emerald-100 underline decoration-emerald-100/40 underline-offset-4" href="/journal">Visit the journal →</Link></>}
+          <div className="mt-12 relative group/note rounded-2xl overflow-hidden">
+            {/* Premium warm gradient background — orange to teal, inspired by reference */}
+            <div className="absolute inset-0 bg-[linear-gradient(145deg,#c2410c_0%,#ea580c_20%,#f97316_40%,#dc6843_60%,#1a5c52_90%,#134e4a_100%)] opacity-90" />
+            {/* Subtle inner radial glow for depth */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.12),transparent_60%)]" />
+            {/* Bottom-right dark vignette for grounding */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(0,0,0,0.35),transparent_65%)]" />
+
+            <div className="relative z-10 p-7 sm:p-10">
+              {latestPost ? (
+                <>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-100/90">
+                    Latest note
+                  </p>
+                  <h3 className="mt-4 max-w-2xl text-2xl font-medium tracking-[-0.04em] text-white sm:text-3xl">
+                    <Link
+                      className="transition hover:text-amber-50"
+                      href={`/journal/${latestPost.slug}`}
+                    >
+                      {latestPost.title}
+                    </Link>
+                  </h3>
+                  {latestPost.excerpt && (
+                    <p className="mt-4 max-w-2xl text-lg leading-8 text-white/80">
+                      {latestPost.excerpt}
+                    </p>
+                  )}
+                  <p className="mt-5 text-sm text-amber-100/70">
+                    {latestPost.tags?.join(" · ")}
+                  </p>
+                  <div className="mt-7 flex flex-wrap gap-4">
+                    <Link
+                      className="inline-flex items-center gap-2 rounded-full bg-white/95 px-5 py-2.5 text-sm font-medium text-orange-900 shadow-lg shadow-black/10 transition hover:bg-white hover:shadow-xl hover:shadow-black/15 hover:-translate-y-0.5"
+                      href={`/journal/${latestPost.slug}`}
+                    >
+                      Read note <ArrowUpRight />
+                    </Link>
+                    <Link
+                      className="inline-flex items-center gap-2 rounded-full border border-white/25 px-5 py-2.5 text-sm font-medium text-white/90 transition hover:border-white/50 hover:text-white hover:-translate-y-0.5"
+                      href="/journal"
+                    >
+                      More notes →
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="max-w-2xl text-xl leading-8 text-white/90 sm:text-2xl">
+                    The journal is ready for the quieter parts of the journey—not just what I build, but what I notice along the way.
+                  </p>
+                  <Link
+                    className="mt-7 inline-flex text-sm text-amber-100 underline decoration-amber-100/40 underline-offset-4 transition hover:decoration-amber-100/70"
+                    href="/journal"
+                  >
+                    Visit the journal →
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         </section>
 

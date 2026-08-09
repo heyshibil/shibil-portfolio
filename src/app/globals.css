@@ -136,62 +136,144 @@ a { text-underline-offset: 0.25em; }
   transform: translateY(-2px);
 }
 
-/* ── Project Cards ──────────────────────────────────────── */
-.project-card {
+/* ── Project Cards (macOS Folder Style) ────────────────── */
+.project-folder {
+  --folder-back: #1e2422;
+  --folder-front: #161b18;
+  --folder-border: rgb(255 255 255 / .08);
   position: relative;
-  overflow: hidden;
-  border: 1px solid rgb(255 255 255 / .1);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  background: rgb(255 255 255 / .025);
-  transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease;
+  padding-top: 2.5rem;           /* space for the folder tab */
+  transition: transform .4s cubic-bezier(.22,.61,.36,1);
+}
+.project-folder:hover {
+  transform: translateY(-4px);
 }
 
-/* Accent top border — varies per card */
-.project-card { border-top: 2px solid rgb(255 255 255 / .1); }
-.project-card[data-accent="emerald"] { border-top-color: rgb(167 243 208 / 0.5); }
-.project-card[data-accent="amber"]   { border-top-color: rgb(253 230 138 / 0.5); }
-.project-card[data-accent="sky"]     { border-top-color: rgb(186 230 253 / 0.5); }
+/* ── Folder back panel (with tab) ─────────────────────── */
+.folder-back {
+  position: absolute;
+  inset: 0;
+  top: 0;
+  background: var(--folder-back);
+  border: 1px solid var(--folder-border);
+  /* Smooth folder tab silhouette */
+  clip-path: polygon(
+    0% 0.5rem,
+    0.15rem 0.15rem,
+    0.5rem 0%,
+    6.75rem 0%,
+    7.1rem 0.15rem,
+    8.35rem 2.35rem,
+    8.65rem 2.5rem,
+    calc(100% - 0.75rem) 2.5rem,
+    calc(100% - 0.15rem) calc(2.5rem + 0.15rem),
+    100% calc(2.5rem + 0.75rem),
+    100% calc(100% - 0.75rem),
+    calc(100% - 0.15rem) calc(100% - 0.15rem),
+    calc(100% - 0.75rem) 100%,
+    0.75rem 100%,
+    0.15rem calc(100% - 0.15rem),
+    0% calc(100% - 0.75rem)
+  );
+}
+
+/* Sleek accent pill line resting neatly on the flat tab top */
+.folder-tab-accent {
+  position: absolute;
+  top: 0;
+  left: 0.6rem;
+  width: 6.0rem;
+  height: 2px;
+  border-radius: 999px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.project-folder[data-accent="emerald"] .folder-tab-accent {
+  background: rgb(167 243 208 / 0.85);
+  box-shadow: 0 0 8px rgb(167 243 208 / 0.3);
+}
+.project-folder[data-accent="amber"] .folder-tab-accent {
+  background: rgb(253 230 138 / 0.85);
+  box-shadow: 0 0 8px rgb(253 230 138 / 0.3);
+}
+.project-folder[data-accent="sky"] .folder-tab-accent {
+  background: rgb(186 230 253 / 0.85);
+  box-shadow: 0 0 8px rgb(186 230 253 / 0.3);
+}
 
 /* Number color matches accent */
-.project-card[data-accent="emerald"] .project-index { color: rgb(167 243 208 / 0.6); }
-.project-card[data-accent="amber"]   .project-index { color: rgb(253 230 138 / 0.6); }
-.project-card[data-accent="sky"]     .project-index { color: rgb(186 230 253 / 0.6); }
+.project-folder[data-accent="emerald"] .project-index { color: rgb(167 243 208 / 0.5); }
+.project-folder[data-accent="amber"]   .project-index { color: rgb(253 230 138 / 0.5); }
+.project-folder[data-accent="sky"]     .project-index { color: rgb(186 230 253 / 0.5); }
 
-/* Subtle dot pattern in top-right corner */
-.project-card::after {
+/* ── Cover image — the document inside the folder ─────── */
+.project-cover-wrap {
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  margin: 1.25rem 1rem 0;        /* 20px down into the folder */
+  aspect-ratio: 16 / 10;
+  background: rgb(255 255 255 / .03);
+  border: 1px solid rgb(255 255 255 / .06);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.2);
+  transition: transform .5s cubic-bezier(.22,.61,.36,1),
+              box-shadow .5s cubic-bezier(.22,.61,.36,1);
+  transform-origin: center bottom;
+  will-change: transform;
+}
+
+.project-cover-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  display: block;
+}
+
+/* Hover — cover pops out of the folder and tilts */
+.project-folder:hover .project-cover-wrap {
+  transform: translateY(-1.25rem) rotate(-2.5deg) scale(1.02);
+  box-shadow: 0 24px 48px rgb(0 0 0 / 0.5),
+              0 8px 20px rgb(0 0 0 / 0.3);
+}
+
+/* ── Front panel — the folder flap with project details ─ */
+.folder-front {
+  position: relative;
+  z-index: 3;
+  background: var(--folder-front);
+  border: 1px solid var(--folder-border);
+  border-top: none;
+  border-radius: 0 0 0.75rem 0.75rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+  margin-top: -4rem;             /* overlap ~30% of the image */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Subtle top edge highlight on front panel */
+.folder-front::before {
   content: "";
   position: absolute;
   top: 0;
-  right: 0;
-  width: 8rem;
-  height: 8rem;
-  background-image: radial-gradient(circle, rgb(255 255 255 / 0.06) 1px, transparent 1px);
-  background-size: 12px 12px;
-  mask-image: radial-gradient(ellipse at top right, black 20%, transparent 70%);
-  -webkit-mask-image: radial-gradient(ellipse at top right, black 20%, transparent 70%);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .4s ease;
+  left: 1rem;
+  right: 1rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / .1), transparent);
 }
-.project-card:hover::after { opacity: 1; }
 
-/* Hover states per accent */
-.project-card:hover {
-  transform: translateY(-4px);
-  border-color: rgb(255 255 255 / .15);
+/* ── Hover glow per accent ────────────────────────────── */
+.project-folder[data-accent="emerald"]:hover {
+  filter: drop-shadow(0 4px 24px rgb(167 243 208 / 0.06));
 }
-.project-card[data-accent="emerald"]:hover {
-  box-shadow: 0 8px 32px rgb(167 243 208 / 0.07);
-  border-top-color: rgb(167 243 208 / 0.7);
+.project-folder[data-accent="amber"]:hover {
+  filter: drop-shadow(0 4px 24px rgb(253 230 138 / 0.06));
 }
-.project-card[data-accent="amber"]:hover {
-  box-shadow: 0 8px 32px rgb(253 230 138 / 0.07);
-  border-top-color: rgb(253 230 138 / 0.7);
-}
-.project-card[data-accent="sky"]:hover {
-  box-shadow: 0 8px 32px rgb(186 230 253 / 0.07);
-  border-top-color: rgb(186 230 253 / 0.7);
+.project-folder[data-accent="sky"]:hover {
+  filter: drop-shadow(0 4px 24px rgb(186 230 253 / 0.06));
 }
 
 .project-link {
@@ -204,7 +286,7 @@ a { text-underline-offset: 0.25em; }
   color: #e4e4e7;
   transition: color .2s ease, background .2s ease, transform .2s ease;
 }
-.project-card:hover .project-link {
+.project-folder:hover .project-link {
   transform: translate(2px, -2px);
   background: var(--accent-soft);
   color: #102218;
@@ -310,5 +392,5 @@ a { text-underline-offset: 0.25em; }
 /* ── Responsive ─────────────────────────────────────────── */
 @media (min-width: 40rem) {
   .site-shell { width: min(100% - 3rem, 76rem); }
-  .project-card { padding: 1.75rem; }
+  .folder-front { padding: 1.25rem 1.75rem 1.75rem; }
 }
