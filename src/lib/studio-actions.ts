@@ -54,10 +54,11 @@ async function uploadProjectCover(slug: string, file: File) {
   const extension = coverExtension(file.type);
   if (!extension) return null;
 
+  const admin = createSupabaseAdminClient();
+  if (!admin) return null;
+
   const path = `projects/${slug}-${Date.now()}.${extension}`;
-  const { error } = await createSupabaseAdminClient()
-    .storage.from(PORTFOLIO_ASSETS_BUCKET)
-    .upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: false });
+  const { error } = await admin.storage.from(PORTFOLIO_ASSETS_BUCKET).upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: false });
 
   return error ? null : path;
 }
@@ -78,6 +79,7 @@ export async function savePost(formData: FormData) {
 
   const { id, title, slug, excerpt, body, tags, status } = parsed.data;
   const admin = createSupabaseAdminClient();
+  if (!admin) redirect("/studio/posts?error=save-failed");
   const payload = {
     title,
     slug: toSlug(slug || title),
@@ -106,7 +108,10 @@ export async function deletePost(formData: FormData) {
   const id = z.string().uuid().safeParse(formData.get("id"));
   if (!id.success) redirect("/studio/posts?error=delete-failed");
 
-  const { error } = await createSupabaseAdminClient().from("blog_posts").delete().eq("id", id.data);
+  const admin = createSupabaseAdminClient();
+  if (!admin) redirect("/studio/posts?error=delete-failed");
+
+  const { error } = await admin.from("blog_posts").delete().eq("id", id.data);
   if (error) redirect("/studio/posts?error=delete-failed");
 
   revalidatePath("/");
@@ -150,6 +155,9 @@ export async function saveProject(formData: FormData) {
     coverImagePath = uploadedPath;
   }
 
+  const admin = createSupabaseAdminClient();
+  if (!admin) redirect("/studio/projects?error=save-failed");
+
   const payload = {
     name,
     slug: projectSlug,
@@ -166,7 +174,7 @@ export async function saveProject(formData: FormData) {
     sort_order: sortOrder,
     ...(coverImagePath !== undefined ? { cover_image_path: coverImagePath } : {}),
   };
-  const result = id ? await createSupabaseAdminClient().from("projects").update(payload).eq("id", id) : await createSupabaseAdminClient().from("projects").insert(payload);
+  const result = id ? await admin.from("projects").update(payload).eq("id", id) : await admin.from("projects").insert(payload);
   if (result.error) {
     console.error("Project save failed", result.error);
     redirect("/studio/projects?error=save-failed");
@@ -186,6 +194,8 @@ export async function removeProjectCover(formData: FormData) {
   if (!id.success) redirect("/studio/projects?error=save-failed");
 
   const admin = createSupabaseAdminClient();
+  if (!admin) redirect("/studio/projects?error=save-failed");
+
   const { data: project } = await admin.from("projects").select("cover_image_path").eq("id", id.data).maybeSingle();
   if (!project) redirect("/studio/projects?error=save-failed");
 
@@ -211,7 +221,10 @@ export async function deleteProject(formData: FormData) {
   const id = z.string().uuid().safeParse(formData.get("id"));
   if (!id.success) redirect("/studio/projects?error=delete-failed");
 
-  const { error } = await createSupabaseAdminClient().from("projects").delete().eq("id", id.data);
+  const admin = createSupabaseAdminClient();
+  if (!admin) redirect("/studio/projects?error=delete-failed");
+
+  const { error } = await admin.from("projects").delete().eq("id", id.data);
   if (error) redirect("/studio/projects?error=delete-failed");
 
   revalidatePath("/");

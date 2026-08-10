@@ -28,7 +28,10 @@ function SectionHeading({ eyebrow, children }: { eyebrow: string; children: Reac
 
 export default async function Home() {
   const supabase = createSupabasePublicClient();
-  const [{ data: latestPost }, projects] = await Promise.all([supabase.from("blog_posts").select("title, slug, excerpt, tags, published_at").eq("status", "published").order("published_at", { ascending: false }).limit(1).maybeSingle(), getPublishedProjects()]);
+  const latestPostPromise = supabase
+    ? supabase.from("blog_posts").select("title, slug, excerpt, tags, published_at").eq("status", "published").order("published_at", { ascending: false }).limit(1).maybeSingle()
+    : Promise.resolve({ data: null });
+  const [{ data: latestPost }, projects] = await Promise.all([latestPostPromise, getPublishedProjects()]);
   return (
     <main className="overflow-hidden">
       <div className="site-shell">

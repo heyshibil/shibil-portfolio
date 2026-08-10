@@ -7,6 +7,10 @@ export const dynamic = "force-dynamic";
 export default async function StudioPage() {
   const user = await requirePortfolioOwner();
   const admin = createSupabaseAdminClient();
+  if (!admin) {
+    return <main className="min-h-svh"><div className="site-shell py-8 sm:py-10"><header className="flex items-center justify-between border-b border-white/10 pb-6"><div><p className="eyebrow">Private dashboard</p><h1 className="mt-2 text-2xl font-medium tracking-[-0.04em] text-white">Portfolio studio</h1></div><Link className="button-secondary" href="/">View site ↗</Link></header><section className="py-12"><p className="text-zinc-400">Signed in as {user.email}</p><p className="mt-6 rounded-lg border border-red-200/20 bg-red-200/10 p-4 text-sm text-red-100">Studio content is unavailable until the Supabase admin environment variables are configured.</p></section></div></main>;
+  }
+
   const [projects, posts, experiences] = await Promise.all([
     admin.from("projects").select("id", { count: "exact", head: true }),
     admin.from("blog_posts").select("id", { count: "exact", head: true }),

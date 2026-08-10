@@ -10,6 +10,7 @@ export async function GET(request: Request) {
   const response = NextResponse.redirect(new URL(safeNext, requestUrl.origin));
 
   if (!code) return response;
+  if (!supabaseConfig.hasPublicConfig()) return response;
 
   const supabase = createServerClient(supabaseConfig.url(), supabaseConfig.publishableKey(), {
     cookies: {

@@ -39,12 +39,32 @@ function withDefaultCover(project: Project): Project {
 }
 
 export async function getPublishedProjects() {
-  const { data } = await createSupabasePublicClient().from("projects").select("slug, name, project_type, year, summary, scope, stack, challenge, lessons, live_url, github_url, cover_image_path").eq("is_published", true).order("sort_order");
-  return data?.length ? data.map(mapProject) : projects.map(withDefaultCover);
+  const supabase = createSupabasePublicClient();
+  if (!supabase) {
+    return projects.map(withDefaultCover);
+  }
+
+  try {
+    const { data } = await supabase.from("projects").select("slug, name, project_type, year, summary, scope, stack, challenge, lessons, live_url, github_url, cover_image_path").eq("is_published", true).order("sort_order");
+    return data?.length ? data.map(mapProject) : projects.map(withDefaultCover);
+  } catch {
+    return projects.map(withDefaultCover);
+  }
 }
 
 export async function getPublishedProject(slug: string) {
-  const { data } = await createSupabasePublicClient().from("projects").select("slug, name, project_type, year, summary, scope, stack, challenge, lessons, live_url, github_url, cover_image_path").eq("slug", slug).eq("is_published", true).maybeSingle();
-  const project = data ? mapProject(data) : getProject(slug);
-  return project ? withDefaultCover(project) : undefined;
+  const supabase = createSupabasePublicClient();
+  if (!supabase) {
+    const project = getProject(slug);
+    return project ? withDefaultCover(project) : undefined;
+  }
+
+  try {
+    const { data } = await supabase.from("projects").select("slug, name, project_type, year, summary, scope, stack, challenge, lessons, live_url, github_url, cover_image_path").eq("slug", slug).eq("is_published", true).maybeSingle();
+    const project = data ? mapProject(data) : getProject(slug);
+    return project ? withDefaultCover(project) : undefined;
+  } catch {
+    const project = getProject(slug);
+    return project ? withDefaultCover(project) : undefined;
+  }
 }
