@@ -10,6 +10,7 @@ export type Project = {
   lessons: string;
   liveHref?: string;
   githubHref?: string;
+  coverSrc?: string;
 };
 
 export const projects: Project[] = [

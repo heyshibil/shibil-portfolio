@@ -3,18 +3,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { DEFAULT_PROJECT_COVER } from "@/lib/project-cover";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
 import { getPublishedProjects } from "@/lib/public-projects";
 
 export const revalidate = 3600;
 
 const cardAccents = ["emerald", "amber", "sky"] as const;
-
-const projectCovers: Record<string, string> = {
-  ascend: "/projects/ascend-cover.png",
-  decibel: "/projects/decibel-cover.png",
-  jobo: "/projects/jobo-cover.png",
-};
 
 function ArrowUpRight() {
   return <span aria-hidden="true">↗</span>;
@@ -82,7 +77,7 @@ export default async function Home() {
                 {/* Cover image — the document tucked inside the folder */}
                 <div className="project-cover-wrap">
                   <Image
-                    src={projectCovers[project.slug] || "/projects/ascend-cover.png"}
+                    src={project.coverSrc ?? DEFAULT_PROJECT_COVER}
                     alt={`${project.name} preview`}
                     width={640}
                     height={400}
@@ -308,7 +303,12 @@ export default async function Home() {
             Building something meaningful? I&apos;d like to hear about it.
           </h2>
           <div className="mt-10 flex flex-wrap gap-x-8 gap-y-4">
-            <a className="contact-link" href="mailto:shibzzmohd@gmail.com">
+            <a
+              className="contact-link"
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=shibzzmohd@gmail.com&su=Hello%20Shibil%20%E2%80%94%20I'd%20like%20to%20connect&body=Hi%20Shibil%2C%0D%0A%0D%0AMy%20name%20is%20...%20and%20I'm%20reaching%20out%20because%20...%0D%0A%0D%0AThanks%2C%0D%0A"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
               Email <span className="contact-link-arrow"><ArrowUpRight /></span>
             </a>
             <a className="contact-link" href="https://www.linkedin.com/in/shibil-mohammed0770/" target="_blank" rel="noreferrer">

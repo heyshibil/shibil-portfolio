@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requirePortfolioOwner } from "@/lib/auth";
+import { PORTFOLIO_ASSETS_BUCKET, PROJECT_COVER_MAX_BYTES } from "@/lib/project-cover";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+
+const COVER_MAX_BYTES = PROJECT_COVER_MAX_BYTES;
+const COVER_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const postSchema = z.object({
   id: z.string().uuid().optional(),
@@ -35,6 +39,27 @@ const projectSchema = z.object({
 
 function toSlug(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function coverExtension(mimeType: string) {
+  if (mimeType === "image/jpeg") return "jpg";
+  if (mimeType === "image/png") return "png";
+  if (mimeType === "image/webp") return "webp";
+  return null;
+}
+
+async function uploadProjectCover(slug: string, file: File) {
+  if (!COVER_MIME_TYPES.has(file.type) || file.size > COVER_MAX_BYTES) return null;
+
+  const extension = coverExtension(file.type);
+  if (!extension) return null;
+
+  const path = `projects/${slug}-${Date.now()}.${extension}`;
+  const { error } = await createSupabaseAdminClient()
+    .storage.from(PORTFOLIO_ASSETS_BUCKET)
+    .upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: false });
+
+  return error ? null : path;
 }
 
 export async function savePost(formData: FormData) {
@@ -115,9 +140,19 @@ export async function saveProject(formData: FormData) {
   }
 
   const { id, name, slug, projectType, year, summary, scope, stack, challenge, lessons, liveUrl, githubUrl, status, sortOrder } = parsed.data;
+  const projectSlug = toSlug(slug || name);
+  const coverFile = formData.get("coverImage");
+  let coverImagePath: string | undefined;
+
+  if (coverFile instanceof File && coverFile.size > 0) {
+    const uploadedPath = await uploadProjectCover(projectSlug, coverFile);
+    if (!uploadedPath) redirect("/studio/projects?error=invalid-cover");
+    coverImagePath = uploadedPath;
+  }
+
   const payload = {
     name,
-    slug: toSlug(slug || name),
+    slug: projectSlug,
     project_type: projectType,
     year,
     summary,
@@ -129,6 +164,7 @@ export async function saveProject(formData: FormData) {
     github_url: githubUrl || null,
     is_published: status === "published",
     sort_order: sortOrder,
+    ...(coverImagePath !== undefined ? { cover_image_path: coverImagePath } : {}),
   };
   const result = id ? await createSupabaseAdminClient().from("projects").update(payload).eq("id", id) : await createSupabaseAdminClient().from("projects").insert(payload);
   if (result.error) {
@@ -142,6 +178,32 @@ export async function saveProject(formData: FormData) {
   revalidatePath("/studio");
   revalidatePath("/studio/projects");
   redirect("/studio/projects?saved=true");
+}
+
+export async function removeProjectCover(formData: FormData) {
+  await requirePortfolioOwner();
+  const id = z.string().uuid().safeParse(formData.get("id"));
+  if (!id.success) redirect("/studio/projects?error=save-failed");
+
+  const admin = createSupabaseAdminClient();
+  const { data: project } = await admin.from("projects").select("cover_image_path").eq("id", id.data).maybeSingle();
+  if (!project) redirect("/studio/projects?error=save-failed");
+
+  const storedPath = project.cover_image_path;
+  if (storedPath && !storedPath.startsWith("http://") && !storedPath.startsWith("https://") && !storedPath.startsWith("/")) {
+    await admin.storage.from(PORTFOLIO_ASSETS_BUCKET).remove([storedPath]);
+  }
+
+  const { error } = await admin.from("projects").update({ cover_image_path: null }).eq("id", id.data);
+  if (error) redirect(`/studio/projects/${id.data}?error=save-failed`);
+
+  revalidatePath("/");
+  revalidatePath("/work");
+  revalidatePath("/work/[slug]", "page");
+  revalidatePath("/studio");
+  revalidatePath("/studio/projects");
+  revalidatePath(`/studio/projects/${id.data}`);
+  redirect(`/studio/projects/${id.data}?cover-removed=true`);
 }
 
 export async function deleteProject(formData: FormData) {

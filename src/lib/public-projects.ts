@@ -1,4 +1,5 @@
 import { getProject, projects, type Project } from "@/lib/portfolio";
+import { DEFAULT_PROJECT_COVER, resolveProjectCoverSrc } from "@/lib/project-cover";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
 
 type ProjectRow = {
@@ -13,6 +14,7 @@ type ProjectRow = {
   lessons: string | null;
   live_url: string | null;
   github_url: string | null;
+  cover_image_path: string | null;
 };
 
 function mapProject(row: ProjectRow): Project {
@@ -28,15 +30,21 @@ function mapProject(row: ProjectRow): Project {
     lessons: row.lessons ?? "No project reflection has been added yet.",
     liveHref: row.live_url ?? undefined,
     githubHref: row.github_url ?? undefined,
+    coverSrc: resolveProjectCoverSrc(row.cover_image_path),
   };
 }
 
+function withDefaultCover(project: Project): Project {
+  return { ...project, coverSrc: project.coverSrc ?? DEFAULT_PROJECT_COVER };
+}
+
 export async function getPublishedProjects() {
-  const { data } = await createSupabasePublicClient().from("projects").select("slug, name, project_type, year, summary, scope, stack, challenge, lessons, live_url, github_url").eq("is_published", true).order("sort_order");
-  return data?.length ? data.map(mapProject) : projects;
+  const { data } = await createSupabasePublicClient().from("projects").select("slug, name, project_type, year, summary, scope, stack, challenge, lessons, live_url, github_url, cover_image_path").eq("is_published", true).order("sort_order");
+  return data?.length ? data.map(mapProject) : projects.map(withDefaultCover);
 }
 
 export async function getPublishedProject(slug: string) {
-  const { data } = await createSupabasePublicClient().from("projects").select("slug, name, project_type, year, summary, scope, stack, challenge, lessons, live_url, github_url").eq("slug", slug).eq("is_published", true).maybeSingle();
-  return data ? mapProject(data) : getProject(slug);
+  const { data } = await createSupabasePublicClient().from("projects").select("slug, name, project_type, year, summary, scope, stack, challenge, lessons, live_url, github_url, cover_image_path").eq("slug", slug).eq("is_published", true).maybeSingle();
+  const project = data ? mapProject(data) : getProject(slug);
+  return project ? withDefaultCover(project) : undefined;
 }
