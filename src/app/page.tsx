@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 import { DEFAULT_PROJECT_COVER } from "@/lib/project-cover";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
 import { getPublishedProjects } from "@/lib/public-projects";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export const revalidate = 3600;
 
@@ -31,7 +32,8 @@ export default async function Home() {
   const latestPostPromise = supabase
     ? supabase.from("blog_posts").select("title, slug, excerpt, tags, published_at").eq("status", "published").order("published_at", { ascending: false }).limit(1).maybeSingle()
     : Promise.resolve({ data: null });
-  const [{ data: latestPost }, projects] = await Promise.all([latestPostPromise, getPublishedProjects()]);
+  const [{ data: latestPost }, projects, siteSettings] = await Promise.all([latestPostPromise, getPublishedProjects(), getSiteSettings()]);
+  const currentExperience = siteSettings.experience;
   return (
     <main className="overflow-hidden">
       <div className="site-shell">
@@ -50,12 +52,12 @@ export default async function Home() {
                 I&apos;m Shibil Mohammed, a full-stack developer who turns complex ideas into dependable web applications and backend systems.
               </p>
               <div className="animate-in animate-delay-4 mt-9 flex flex-wrap gap-3">
-                <Link className="button-primary" href="/work">Explore selected work <ArrowUpRight /></Link>
-                <a className="button-secondary" href="mailto:shibzzmohd@gmail.com">Email me <ArrowUpRight /></a>
+                <Link className="button-primary" href="/work">Explore selected work</Link>
+                <Link className="button-secondary" href="/resume">View resume</Link>
               </div>
             </div>
             <p className="animate-in animate-delay-5 border-l border-emerald-200/40 pl-5 text-sm leading-6 text-zinc-400">
-              Currently a Full Stack Developer at Bridgeon Solutions LLP. Always open to an interesting conversation.
+              Currently a {currentExperience?.role ?? "Full Stack Developer"} at {currentExperience?.organization ?? "Bridgeon Solutions LLP"}. {currentExperience?.description ?? "Always open to an interesting conversation."}
             </p>
           </div>
         </section>
@@ -271,13 +273,13 @@ export default async function Home() {
                       className="inline-flex items-center gap-2 rounded-full bg-white/95 px-5 py-2.5 text-sm font-medium text-orange-900 shadow-lg shadow-black/10 transition hover:bg-white hover:shadow-xl hover:shadow-black/15 hover:-translate-y-0.5"
                       href={`/journal/${latestPost.slug}`}
                     >
-                      Read note <ArrowUpRight />
+                      Read note
                     </Link>
                     <Link
                       className="inline-flex items-center gap-2 rounded-full border border-white/25 px-5 py-2.5 text-sm font-medium text-white/90 transition hover:border-white/50 hover:text-white hover:-translate-y-0.5"
                       href="/journal"
                     >
-                      More notes →
+                      More notes
                     </Link>
                   </div>
                 </>
@@ -312,13 +314,13 @@ export default async function Home() {
               target="_blank"
               rel="noreferrer noopener"
             >
-              Email <span className="contact-link-arrow"><ArrowUpRight /></span>
+              Email
             </a>
             <a className="contact-link" href="https://www.linkedin.com/in/shibil-mohammed0770/" target="_blank" rel="noreferrer">
-              LinkedIn <span className="contact-link-arrow"><ArrowUpRight /></span>
+              LinkedIn
             </a>
             <a className="contact-link" href="https://github.com/heyshibil" target="_blank" rel="noreferrer">
-              GitHub <span className="contact-link-arrow"><ArrowUpRight /></span>
+              GitHub
             </a>
           </div>
         </section>

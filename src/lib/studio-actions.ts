@@ -6,9 +6,11 @@ import { z } from "zod";
 import { requirePortfolioOwner } from "@/lib/auth";
 import { PORTFOLIO_ASSETS_BUCKET, PROJECT_COVER_MAX_BYTES } from "@/lib/project-cover";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { ASSETS_BUCKET } from "@/lib/site-settings";
 
 const COVER_MAX_BYTES = PROJECT_COVER_MAX_BYTES;
 const COVER_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const RESUME_MAX_BYTES = 8 * 1024 * 1024;
 
 const postSchema = z.object({
   id: z.string().uuid().optional(),
@@ -46,6 +48,65 @@ function coverExtension(mimeType: string) {
   if (mimeType === "image/png") return "png";
   if (mimeType === "image/webp") return "webp";
   return null;
+}
+
+async function uploadResume(file: File) {
+  const allowed = new Set(["application/pdf"]);
+  if (!allowed.has(file.type) || file.size > RESUME_MAX_BYTES) return null;
+  const admin = createSupabaseAdminClient();
+  if (!admin) return null;
+  const path = `resume/shibil-mohammed-${Date.now()}.pdf`;
+  const { error } = await admin.storage.from(ASSETS_BUCKET).upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: false });
+  return error ? null : path;
+}
+
+const settingsSchema = z.object({
+  role: z.string().trim().min(2).max(120),
+  organization: z.string().trim().min(2).max(160),
+  location: z.string().trim().max(120).optional(),
+  description: z.string().trim().min(10).max(500),
+});
+
+export async function saveSiteSettings(formData: FormData) {
+  await requirePortfolioOwner();
+  const parsed = settingsSchema.safeParse({ role: formData.get("role"), organization: formData.get("organization"), location: formData.get("location") || undefined, description: formData.get("description") });
+  if (!parsed.success) redirect("/studio/settings?error=invalid-settings");
+  const admin = createSupabaseAdminClient();
+  if (!admin) redirect("/studio/settings?error=save-failed");
+
+  const { data: current } = await admin.from("experiences").select("id").is("ended_on", null).order("sort_order").limit(1).maybeSingle();
+  const experience = { role: parsed.data.role, organization: parsed.data.organization, location: parsed.data.location || null, description: parsed.data.description, started_on: "2025-08-11", ended_on: null, is_published: true, sort_order: 0 };
+  const result = current?.id ? await admin.from("experiences").update(experience).eq("id", current.id) : await admin.from("experiences").insert(experience);
+  if (result.error) redirect("/studio/settings?error=save-failed");
+
+  const resumeFile = formData.get("resume");
+  if (resumeFile instanceof File && resumeFile.size > 0) {
+    const resumePath = await uploadResume(resumeFile);
+    if (!resumePath) redirect("/studio/settings?error=invalid-resume");
+    const { error } = await admin.from("site_settings").upsert({ id: true, resume_path: resumePath });
+    if (error) redirect("/studio/settings?error=save-failed");
+  }
+
+  revalidatePath("/");
+  revalidatePath("/about");
+  revalidatePath("/resume");
+  revalidatePath("/studio");
+  revalidatePath("/studio/settings");
+  redirect("/studio/settings?saved=true");
+}
+
+export async function removeResume() {
+  await requirePortfolioOwner();
+  const admin = createSupabaseAdminClient();
+  if (!admin) redirect("/studio/settings?error=save-failed");
+  const { data: settings } = await admin.from("site_settings").select("resume_path").eq("id", true).maybeSingle();
+  if (settings?.resume_path && !settings.resume_path.startsWith("http") && !settings.resume_path.startsWith("/")) await admin.storage.from(ASSETS_BUCKET).remove([settings.resume_path]);
+  const { error } = await admin.from("site_settings").upsert({ id: true, resume_path: null });
+  if (error) redirect("/studio/settings?error=save-failed");
+  revalidatePath("/");
+  revalidatePath("/resume");
+  revalidatePath("/studio/settings");
+  redirect("/studio/settings?resume-removed=true");
 }
 
 async function uploadProjectCover(slug: string, file: File) {
