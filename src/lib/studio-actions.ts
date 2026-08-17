@@ -4,12 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requirePortfolioOwner } from "@/lib/auth";
-import { PORTFOLIO_ASSETS_BUCKET, PROJECT_COVER_MAX_BYTES } from "@/lib/project-cover";
+import { PORTFOLIO_ASSETS_BUCKET, PROJECT_COVER_MAX_BYTES, PROJECT_GALLERY_MAX_BYTES } from "@/lib/project-cover";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { ASSETS_BUCKET } from "@/lib/site-settings";
 
 const COVER_MAX_BYTES = PROJECT_COVER_MAX_BYTES;
 const COVER_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const GALLERY_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const RESUME_MAX_BYTES = 8 * 1024 * 1024;
 
 const postSchema = z.object({
@@ -121,6 +122,17 @@ async function uploadProjectCover(slug: string, file: File) {
   const path = `projects/${slug}-${Date.now()}.${extension}`;
   const { error } = await admin.storage.from(PORTFOLIO_ASSETS_BUCKET).upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: false });
 
+  return error ? null : path;
+}
+
+async function uploadProjectGalleryImage(slug: string, file: File) {
+  if (!GALLERY_MIME_TYPES.has(file.type) || file.size > PROJECT_GALLERY_MAX_BYTES) return null;
+  const extension = coverExtension(file.type);
+  if (!extension) return null;
+  const admin = createSupabaseAdminClient();
+  if (!admin) return null;
+  const path = `projects/${slug}/gallery/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
+  const { error } = await admin.storage.from(PORTFOLIO_ASSETS_BUCKET).upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: false });
   return error ? null : path;
 }
 
@@ -241,12 +253,47 @@ export async function saveProject(formData: FormData) {
     redirect("/studio/projects?error=save-failed");
   }
 
+  const { data: savedProject } = await admin.from("projects").select("id").eq("slug", projectSlug).maybeSingle();
+  const galleryFiles = formData.getAll("galleryImages").filter((file): file is File => file instanceof File && file.size > 0);
+  if (savedProject?.id && galleryFiles.length) {
+    const { count, error: galleryTableError } = await admin.from("project_gallery").select("id", { count: "exact", head: true }).eq("project_id", savedProject.id);
+    if (galleryTableError) {
+      console.error("Project gallery migration is missing", galleryTableError);
+      redirect("/studio/projects?error=gallery-migration-required");
+    }
+    for (const [index, file] of galleryFiles.entries()) {
+      const imagePath = await uploadProjectGalleryImage(projectSlug, file);
+      if (!imagePath) redirect("/studio/projects?error=invalid-gallery");
+      const galleryResult = await admin.from("project_gallery").insert({ project_id: savedProject.id, image_path: imagePath, alt_text: `${name} screenshot ${Number(count ?? 0) + index + 1}`, sort_order: Number(count ?? 0) + index });
+      if (galleryResult.error) redirect("/studio/projects?error=save-failed");
+    }
+  }
+
   revalidatePath("/");
   revalidatePath("/work");
   revalidatePath("/work/[slug]", "page");
   revalidatePath("/studio");
   revalidatePath("/studio/projects");
   redirect("/studio/projects?saved=true");
+}
+
+export async function removeProjectGalleryImage(formData: FormData) {
+  await requirePortfolioOwner();
+  const imageId = z.string().uuid().safeParse(formData.get("imageId"));
+  const projectId = z.string().uuid().safeParse(formData.get("projectId") ?? formData.get("id"));
+  if (!imageId.success || !projectId.success) redirect("/studio/projects?error=gallery-failed");
+  const admin = createSupabaseAdminClient();
+  if (!admin) redirect("/studio/projects?error=gallery-failed");
+  const { data: image } = await admin.from("project_gallery").select("image_path").eq("id", imageId.data).eq("project_id", projectId.data).maybeSingle();
+  if (!image) redirect(`/studio/projects/${projectId.data}?error=gallery-failed`);
+  if (image.image_path && !image.image_path.startsWith("http") && !image.image_path.startsWith("/")) await admin.storage.from(PORTFOLIO_ASSETS_BUCKET).remove([image.image_path]);
+  const { error } = await admin.from("project_gallery").delete().eq("id", imageId.data).eq("project_id", projectId.data);
+  if (error) redirect(`/studio/projects/${projectId.data}?error=gallery-failed`);
+  revalidatePath("/");
+  revalidatePath("/work");
+  revalidatePath("/work/[slug]", "page");
+  revalidatePath(`/studio/projects/${projectId.data}`);
+  redirect(`/studio/projects/${projectId.data}?gallery-removed=true`);
 }
 
 export async function removeProjectCover(formData: FormData) {

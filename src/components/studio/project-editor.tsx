@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { saveProject, removeProjectCover } from "@/lib/studio-actions";
-import { DEFAULT_PROJECT_COVER, PROJECT_COVER_MAX_SIZE_LABEL, resolveProjectCoverSrc } from "@/lib/project-cover";
+import { saveProject, removeProjectCover, removeProjectGalleryImage } from "@/lib/studio-actions";
+import { DEFAULT_PROJECT_COVER, PROJECT_COVER_MAX_SIZE_LABEL, PROJECT_GALLERY_MAX_SIZE_LABEL, resolveProjectCoverSrc } from "@/lib/project-cover";
 
 type Project = {
   id?: string;
@@ -19,6 +19,7 @@ type Project = {
   is_published?: boolean;
   sort_order?: number;
   cover_image_path?: string | null;
+  project_gallery?: { id: string; image_path: string; alt_text: string; sort_order: number }[];
 };
 
 export function ProjectEditor({ project = {} }: { project?: Project }) {
@@ -140,6 +141,12 @@ export function ProjectEditor({ project = {} }: { project?: Project }) {
             <p className="text-sm text-zinc-500">Uses the default cover on the home page.</p>
           </div>
         ) : null}
+      </div>
+      <div className="grid gap-3">
+        <p className="text-sm text-zinc-200">Project screenshots <span className="text-zinc-500">Add at least 6 screenshots for the case-study carousel. PNG, JPG, or WebP up to {PROJECT_GALLERY_MAX_SIZE_LABEL}.</span></p>
+        {project.project_gallery?.length ? <div className="grid gap-3 sm:grid-cols-2"><p className="sm:col-span-2 text-sm text-zinc-500">Current screenshots: {project.project_gallery.length}</p>{project.project_gallery.map((image) => <div key={image.id} className="overflow-hidden rounded-xl border border-white/10 bg-zinc-950"><Image src={resolveProjectCoverSrc(image.image_path)} alt={image.alt_text} width={640} height={400} className="aspect-video w-full object-cover" /><div className="flex items-center justify-between gap-3 p-3"><span className="truncate text-xs text-zinc-500">{image.alt_text}</span><button className="button-secondary border-red-200/30 px-3 py-1.5 text-xs text-red-100" type="submit" formAction={removeProjectGalleryImage} formNoValidate name="imageId" value={image.id}>Remove</button></div></div>)}</div> : <p className="text-sm text-zinc-500">No screenshots added yet.</p>}
+        <input className={inputClass} name="galleryImages" type="file" accept="image/png,image/jpeg,image/webp" multiple minLength={6} />
+        <p className="text-xs text-zinc-600">You can select multiple files at once. New screenshots are appended to the existing gallery.</p>
       </div>
       <label className="grid gap-2 text-sm text-zinc-200">
         Visibility

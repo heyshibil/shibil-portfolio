@@ -11,6 +11,7 @@ export type Project = {
   liveHref?: string;
   githubHref?: string;
   coverSrc?: string;
+  gallery?: { id: string; src: string; alt: string }[];
 };
 
 export const projects: Project[] = [

@@ -35,6 +35,15 @@ create table public.projects (
   updated_at timestamptz not null default now()
 );
 
+create table public.project_gallery (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  image_path text not null,
+  alt_text text not null default '',
+  sort_order smallint not null default 0,
+  created_at timestamptz not null default now()
+);
+
 create table public.experiences (
   id uuid primary key default gen_random_uuid(),
   organization text not null,
@@ -82,16 +91,18 @@ create trigger blog_posts_updated_at before update on public.blog_posts for each
 
 alter table public.site_settings enable row level security;
 alter table public.projects enable row level security;
+alter table public.project_gallery enable row level security;
 alter table public.experiences enable row level security;
 alter table public.blog_posts enable row level security;
 
 create policy "public can read site settings" on public.site_settings for select using (true);
 create policy "public can read published projects" on public.projects for select using (is_published = true);
+create policy "public can read gallery images for published projects" on public.project_gallery for select using (exists (select 1 from public.projects where projects.id = project_gallery.project_id and projects.is_published = true));
 create policy "public can read published experiences" on public.experiences for select using (is_published = true);
 create policy "public can read published posts" on public.blog_posts for select using (status = 'published' and published_at <= now());
 
 grant usage on schema public to anon, authenticated;
-grant select on public.site_settings, public.projects, public.experiences, public.blog_posts to anon, authenticated;
+grant select on public.site_settings, public.projects, public.project_gallery, public.experiences, public.blog_posts to anon, authenticated;
 
 insert into storage.buckets (id, name, public)
 values ('portfolio-assets', 'portfolio-assets', true)
