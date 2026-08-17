@@ -10,6 +10,7 @@ try {
 }
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   images: supabaseHostname
     ? {
         remotePatterns: [
@@ -23,7 +24,7 @@ const nextConfig: NextConfig = {
     : undefined,
   experimental: {
     serverActions: {
-      bodySizeLimit: "5 MB",
+      bodySizeLimit: "40 MB",
     },
   },
 };
