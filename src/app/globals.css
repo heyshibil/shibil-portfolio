@@ -95,6 +95,31 @@ a { text-underline-offset: 0.25em; }
   background: var(--accent);
 }
 
+/* Mobile navigation uses the same active dot, positioned at the far right. */
+.mobile-nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: .75rem;
+  padding: .75rem;
+  color: #e4e4e7;
+  transition: color .2s ease;
+}
+.mobile-nav-link:hover { color: #fff; }
+.mobile-nav-link-active { color: var(--ink); }
+.mobile-nav-link-active::after {
+  content: "";
+  position: absolute;
+  right: .25rem;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  transform: translateY(-50%);
+}
+
 /* ── Header ─────────────────────────────────────────────── */
 .site-header {
   position: sticky;

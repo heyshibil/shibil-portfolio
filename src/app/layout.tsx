@@ -8,10 +8,23 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 export const metadata: Metadata = {
   title: "Shibil Mohammed | Full-stack Developer",
   description: "Shibil Mohammed is a full-stack developer from Kerala, India, building dependable web applications and backend systems.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "Shibil Mohammed | Full-stack Developer",
     description: "I build products from the problem up.",
     type: "website",
+    url: "/",
+    siteName: "Shibil Mohammed",
+    images: [{ url: "/opengraph-image" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shibil Mohammed | Full-stack Developer",
+    description: "I build products from the problem up.",
+    images: ["/opengraph-image"],
   },
 };
 
