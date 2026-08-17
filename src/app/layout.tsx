@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   title: "Shibil Mohammed | Full-stack Developer",
   description: "Shibil Mohammed is a full-stack developer from Kerala, India, building dependable web applications and backend systems.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+  },
   alternates: {
     canonical: "/",
   },
