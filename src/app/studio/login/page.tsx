@@ -31,7 +31,8 @@ export default async function StudioLoginPage({
     const headerList = await headers();
     const host = headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "localhost:3000";
     const proto = headerList.get("x-forwarded-proto") ?? "http";
-    const origin = headerList.get("origin") ?? `${proto}://${host}`;
+    const requestOrigin = headerList.get("origin") ?? `${proto}://${host}`;
+    const origin = process.env.NEXT_PUBLIC_SITE_URL?.trim() || requestOrigin;
 
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.signInWithOtp({
