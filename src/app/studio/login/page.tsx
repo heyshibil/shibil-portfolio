@@ -32,7 +32,9 @@ export default async function StudioLoginPage({
     const host = headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "localhost:3000";
     const proto = headerList.get("x-forwarded-proto") ?? "http";
     const requestOrigin = headerList.get("origin") ?? `${proto}://${host}`;
-    const origin = process.env.NEXT_PUBLIC_SITE_URL?.trim() || requestOrigin;
+    const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+    const productionSiteUrl = "https://shibil-portfolio-vercel-ickl.vercel.app";
+    const origin = (configuredSiteUrl || (process.env.VERCEL ? productionSiteUrl : requestOrigin)).replace(/\/$/, "");
 
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.signInWithOtp({
