@@ -177,6 +177,35 @@ a { text-underline-offset: 0.25em; }
   transform: translateY(-4px);
 }
 
+/* Keep the folder cards compact on phones. Touch devices should not retain the
+   desktop hover lift after a tap. */
+@media (max-width: 639px) {
+  .project-folder {
+    width: min(100%, 22rem);
+    margin-inline: auto;
+  }
+
+  .project-cover-wrap {
+    margin: 1rem .75rem 0;
+    aspect-ratio: 16 / 9;
+  }
+
+  .folder-front {
+    padding: 1rem 1.125rem 1.25rem;
+  }
+}
+
+@media (hover: none) {
+  .project-folder:hover {
+    transform: none;
+  }
+
+  .project-folder:hover .project-cover-wrap {
+    transform: none;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.2);
+  }
+}
+
 /* ── Folder back panel (with tab) ─────────────────────── */
 .folder-back {
   position: absolute;
